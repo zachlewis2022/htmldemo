@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Form PWA</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mui/3.7.1/css/mui.min.css" rel="stylesheet">
+    <link rel="manifest" href="#" id="manifest">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .mui-panel {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- Home Page -->
+        <div id="home" class="page">
+            <div class="mui-panel">
+                <h1>Welcome to Simple Form PWA</h1>
+                <button class="mui-btn mui-btn--primary" onclick="navigateTo('form')">Go to Form</button>
+                <button class="mui-btn mui-btn--primary" onclick="navigateTo('list')">View Submissions</button>
+            </div>
+        </div>
+
+        <!-- Form Page -->
+        <div id="form" class="page" style="display: none;">
+            <div class="mui-panel">
+                <h2>Submit Form</h2>
+                <form id="dataForm" class="mui-form">
+                    <div class="mui-textfield">
+                        <input type="text" id="name" required>
+                        <label>Name</label>
+                    </div>
+                    <div class="mui-checkbox">
+                        <label>
+                            <input type="checkbox" id="checkbox1" value="Option 1">
+                            Option 1
+                        </label>
+                    </div>
+                    <div class="mui-checkbox">
+                        <label>
+                            <input type="checkbox" id="checkbox2" value="Option 2">
+                            Option 2
+                        </label>
+                    </div>
+                    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
+                    <button type="button" class="mui-btn mui-btn--raised" onclick="navigateTo('home')">Back to Home</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- List Page -->
+        <div id="list" class="page" style="display: none;">
+            <div class="mui-panel">
+                <h2>Submitted Data</h2>
+                <div class="mui-table-responsive">
+                    <table class="mui-table mui-table--bordered">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Option 1</th>
+                                <th>Option 2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable">
+                        </tbody>
+                    </table>
+                </div>
+                <button class="mui-btn mui-btn--raised" onclick="navigateTo('home')">Back to Home</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create manifest dynamically
+        const manifestContent = {
+            "name": "Simple Form PWA",
+            "short_name": "Form PWA",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#2196F3",
+            "icons": [{
+                "src": "/api/placeholder/192/192",
+                "sizes": "192x192",
+                "type": "image/png"
+            }]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestContent)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        document.querySelector('#manifest').setAttribute('href', manifestURL);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+
+        // Navigation function
+        function navigateTo(page) {
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById(page).style.display = 'block';
+            if (page === 'list') {
+                updateTable();
+            }
+        }
+
+        // Form submission handler
+        document.getElementById('dataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                checkbox1: document.getElementById('checkbox1').checked,
+                checkbox2: document.getElementById('checkbox2').checked
+            };
+
+            // Get existing data from localStorage or initialize empty array
+            const existingData = JSON.parse(localStorage.getItem('formData') || '[]');
+            existingData.push(formData);
+            
+            // Save to localStorage
+            localStorage.setItem('formData', JSON.stringify(existingData));
+            
+            // Reset form and navigate to list
+            this.reset();
+            navigateTo('list');
+        });
+
+        // Update table function
+        function updateTable() {
+            const tableBody = document.getElementById('dataTable');
+            tableBody.innerHTML = '';
+            
+            const data = JSON.parse(localStorage.getItem('formData') || '[]');
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.checkbox1 ? 'Yes' : 'No'}</td>
+                    <td>${item.checkbox2 ? 'Yes' : 'No'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Initial page load
+        navigateTo('home');
+    </script>
+</body>
+</html>
